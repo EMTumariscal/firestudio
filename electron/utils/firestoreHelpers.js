@@ -101,9 +101,21 @@ function dataToFirestoreFields(data) {
   return fields;
 }
 
+/**
+ * Decodes a Firestore document into plain cloneable data.
+ * Unlike doc.data(), references become plain strings instead of
+ * DocumentReference instances, which cannot cross the IPC boundary.
+ * @param {Object} doc - Firestore DocumentSnapshot
+ * @returns {Object} - Plain data object
+ */
+function firestoreDocumentToData(doc) {
+  return parseFirestoreDocument(doc._fieldsProto || {});
+}
+
 module.exports = {
   convertToFirestoreValue,
   parseFirestoreValue,
   parseFirestoreDocument,
   dataToFirestoreFields,
+  firestoreDocumentToData,
 };
