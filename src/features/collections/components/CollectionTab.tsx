@@ -46,7 +46,6 @@ import { RootState, AppDispatch } from '../../../app/store';
 import { Project } from '../../projects/store/projectsSlice';
 import { buildCollectionStateKey } from '../../projects/utils/firestoreDatabaseUtils';
 import { FirestoreValue } from '../../../shared/utils/firestoreUtils';
-import { isFirestoreTimestamp, isIsoDateString, isUnixTimestampMs } from '../../../shared/utils/dateUtils';
 
 // Utilities
 import {
@@ -55,6 +54,7 @@ import {
   getTypeColor,
   parseEditValue,
   serializeForEdit,
+  normalizeEditedValue,
   extractAllFields,
   processDocuments,
   getVisibleFields,
@@ -487,24 +487,8 @@ const CollectionTab: React.FC<CollectionTabProps> = ({ project, collectionPath, 
       const oldValue = editingCell?.originalValue ?? doc.data?.[field];
 
       // Determine the new value - use explicit if provided, otherwise parse editValue
-      let newValue: FirestoreValue;
-      if (explicitValue !== undefined) {
-        newValue = explicitValue;
-      } else {
-        newValue = parseEditValue(editValue);
-
-        // Preserve original type for timestamps
-        if (isFirestoreTimestamp(oldValue) && typeof newValue === 'string' && isIsoDateString(newValue)) {
-          const date = new Date(newValue);
-          newValue = {
-            _seconds: Math.floor(date.getTime() / 1000),
-            _nanoseconds: 0,
-          };
-        } else if (isUnixTimestampMs(oldValue) && typeof newValue === 'string' && isIsoDateString(newValue)) {
-          const date = new Date(newValue);
-          newValue = date.getTime();
-        }
-      }
+      let newValue: FirestoreValue = explicitValue !== undefined ? explicitValue : parseEditValue(editValue);
+      newValue = normalizeEditedValue(newValue, oldValue);
 
       // Skip if unchanged
       if (JSON.stringify(oldValue) === JSON.stringify(newValue)) {
