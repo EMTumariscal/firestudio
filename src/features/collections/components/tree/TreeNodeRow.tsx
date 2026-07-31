@@ -7,6 +7,11 @@ import {
   Description as DocumentIcon,
 } from '@mui/icons-material';
 import { FirestoreValue } from '../../../../shared/utils/firestoreUtils';
+import {
+  isFirestoreTimestamp,
+  isUnixTimestampMs,
+  formatDateForDateTimeLocal,
+} from '../../../../shared/utils/dateUtils';
 import { TreeContext } from './TreeContext';
 
 interface TreeNodeRowProps {
@@ -59,6 +64,15 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
   const displayValue = isExpandable ? '' : formatValue(value, nodeType);
   const isEditing =
     !isCollection && !isDoc && !isExpandable && editingCell?.docId === docId && editingCell?.field === nodeKey;
+  const isDateLike = nodeType === 'Timestamp' || isFirestoreTimestamp(value) || isUnixTimestampMs(value);
+
+  const [dateValue, setDateValue] = React.useState('');
+
+  useEffect(() => {
+    if (isEditing && isDateLike) {
+      setDateValue(formatDateForDateTimeLocal(value));
+    }
+  }, [isEditing, isDateLike, value]);
 
   const isRoot = isCollection && path === rootPath;
   const collectionDocs = isCollection ? (isRoot ? rootDocuments : documentsByPath[path]) : undefined;
@@ -113,21 +127,44 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
         <TableCell sx={{ py: 0.25, borderBottom: 1, borderColor: 'divider', width: '40%' }}>
           {!isCollection && !isDoc && !isExpandable ? (
             isEditing ? (
-              <TextField
-                size="small"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={onCellSave}
-                onKeyDown={onCellKeyDown}
-                autoFocus
-                sx={{
-                  '& .MuiInputBase-input': {
-                    fontFamily: 'monospace',
-                    fontSize: '0.8rem',
-                    py: 0.5,
-                  },
-                }}
-              />
+              isDateLike ? (
+                <TextField
+                  type="datetime-local"
+                  size="small"
+                  value={dateValue}
+                  onChange={(e) => {
+                    setDateValue(e.target.value);
+                    setEditValue(e.target.value);
+                  }}
+                  onBlur={onCellSave}
+                  onKeyDown={onCellKeyDown}
+                  autoFocus
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontFamily: 'monospace',
+                      fontSize: '0.8rem',
+                      py: 0.5,
+                    },
+                  }}
+                />
+              ) : (
+                <TextField
+                  size="small"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={onCellSave}
+                  onKeyDown={onCellKeyDown}
+                  autoFocus
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontFamily: 'monospace',
+                      fontSize: '0.8rem',
+                      py: 0.5,
+                    },
+                  }}
+                />
+              )
             ) : (
               <Typography
                 onClick={() => docId && onCellEdit(docId, nodeKey, value)}

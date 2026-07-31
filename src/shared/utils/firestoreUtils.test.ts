@@ -43,6 +43,22 @@ describe('normalizeEditedValue', () => {
     expect(normalizeEditedValue('hello', { _seconds: 1767225600, _nanoseconds: 0 })).toBe('hello');
   });
 
+  it('converts a datetime-local string back to a timestamp when the original was a Firestore timestamp', () => {
+    const date = new Date('2024-01-15T10:30');
+    expect(normalizeEditedValue('2024-01-15T10:30', { _seconds: 1767225600, _nanoseconds: 0 })).toEqual({
+      _seconds: Math.floor(date.getTime() / 1000),
+      _nanoseconds: 0,
+    });
+  });
+
+  it('converts a datetime-local string back to Unix ms when the original was one', () => {
+    expect(normalizeEditedValue('2024-01-15T10:30:00', 1767225600000)).toBe(new Date('2024-01-15T10:30:00').getTime());
+  });
+
+  it('leaves a datetime-local string unchanged when the original was a string', () => {
+    expect(normalizeEditedValue('2024-01-15T10:30', 'hello')).toBe('2024-01-15T10:30');
+  });
+
   it('passes explicit timestamp objects through unchanged', () => {
     const value = { _seconds: 1767225600, _nanoseconds: 0 };
     expect(normalizeEditedValue(value, value)).toBe(value);

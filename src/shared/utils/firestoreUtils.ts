@@ -2,7 +2,13 @@
  * Firestore Data Type Utilities
  * Handles type detection, formatting, and value parsing for Firestore documents
  */
-import { formatDateForDisplay, isFirestoreTimestamp, isIsoDateString, isUnixTimestampMs } from './dateUtils';
+import {
+  formatDateForDisplay,
+  isDateTimeLocalString,
+  isFirestoreTimestamp,
+  isIsoDateString,
+  isUnixTimestampMs,
+} from './dateUtils';
 
 // Firestore value types
 export type FirestoreValue =
@@ -244,7 +250,7 @@ export const serializeForEdit = (value: FirestoreValue, type: string): string =>
  * original value was a Firestore timestamp or a Unix timestamp in ms.
  */
 export const normalizeEditedValue = (newValue: FirestoreValue, oldValue: FirestoreValue): FirestoreValue => {
-  if (typeof newValue === 'string' && isIsoDateString(newValue)) {
+  if (typeof newValue === 'string' && (isIsoDateString(newValue) || isDateTimeLocalString(newValue))) {
     if (isFirestoreTimestamp(oldValue)) {
       const date = new Date(newValue);
       return { _seconds: Math.floor(date.getTime() / 1000), _nanoseconds: 0 };
