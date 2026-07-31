@@ -146,7 +146,7 @@ describe('firestoreController', () => {
               valueType: 'referenceValue',
             },
             ts: {
-              timestampValue: '2026-01-01T00:00:00.000Z',
+              timestampValue: { seconds: 1767225600, nanos: 0 },
               valueType: 'timestampValue',
             },
           },
@@ -164,6 +164,31 @@ describe('firestoreController', () => {
 
     expect(result.success).toBe(true);
     expect(result.documents[0].data.owner).toBe('projects/p/databases/(default)/documents/users/1');
+    expect(result.documents[0].data.ts).toEqual({ _seconds: 1767225600, _nanoseconds: 0 });
+  });
+
+  it('getDocuments decodes RFC3339 string timestamps as the REST path does', async () => {
+    const snapshot = {
+      docs: [
+        {
+          id: 'a',
+          ref: { path: 'col/a' },
+          _fieldsProto: {
+            ts: { timestampValue: '2026-01-01T00:00:00.000Z', valueType: 'timestampValue' },
+          },
+        },
+      ],
+      size: 1,
+    };
+    const mockCollection = {
+      limit: vi.fn().mockReturnValue({ get: vi.fn().mockResolvedValue(snapshot) }),
+      listDocuments: vi.fn().mockResolvedValue([]),
+    };
+    setRefs(null, { collection: vi.fn().mockReturnValue(mockCollection) });
+
+    const result = await handlers['firestore:getDocuments'](null, { collectionPath: 'col' });
+
+    expect(result.success).toBe(true);
     expect(result.documents[0].data.ts).toEqual({ _seconds: 1767225600, _nanoseconds: 0 });
   });
 
