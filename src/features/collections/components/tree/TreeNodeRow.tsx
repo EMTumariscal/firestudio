@@ -12,6 +12,7 @@ import {
   isUnixTimestampMs,
   formatDateForDateTimeLocal,
 } from '../../../../shared/utils/dateUtils';
+import { DocumentData } from '../../store/collectionSlice';
 import { TreeContext } from './TreeContext';
 
 interface TreeNodeRowProps {
@@ -19,6 +20,8 @@ interface TreeNodeRowProps {
   value: FirestoreValue;
   path: string;
   docId?: string;
+  docData?: DocumentData;
+  docCollectionPath?: string;
   depth?: number;
   isDoc?: boolean;
   isCollection?: boolean;
@@ -30,6 +33,8 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
   value,
   path,
   docId,
+  docData,
+  docCollectionPath,
   depth = 0,
   isDoc = false,
   isCollection = false,
@@ -63,7 +68,12 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
   const isExpanded = expandedNodes[path];
   const displayValue = isExpandable ? '' : formatValue(value, nodeType);
   const isEditing =
-    !isCollection && !isDoc && !isExpandable && editingCell?.docId === docId && editingCell?.field === nodeKey;
+    !isCollection &&
+    !isDoc &&
+    !isExpandable &&
+    editingCell?.docId === docId &&
+    editingCell?.field === nodeKey &&
+    (editingCell?.docCollectionPath ?? docCollectionPath) === docCollectionPath;
   const isDateLike = nodeType === 'Timestamp' || isFirestoreTimestamp(value) || isUnixTimestampMs(value);
 
   const [dateValue, setDateValue] = React.useState('');
@@ -167,7 +177,7 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
               )
             ) : (
               <Typography
-                onClick={() => docId && onCellEdit(docId, nodeKey, value)}
+                onClick={() => docId && onCellEdit(docId, nodeKey, value, docData, docCollectionPath)}
                 sx={{
                   fontSize: '0.8rem',
                   color: getTypeColor(nodeType, isDark),
@@ -205,7 +215,9 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
                 nodeKey={doc.id}
                 value={doc.data}
                 path={`${path}/${doc.id}`}
-                docId={isRoot ? doc.id : undefined}
+                docId={doc.id}
+                docData={doc.data}
+                docCollectionPath={path}
                 isDoc
                 depth={depth + 1}
                 missing={doc.missing}
@@ -224,6 +236,8 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
                 value={v}
                 path={`${path}.${k}`}
                 docId={docId}
+                docData={docData}
+                docCollectionPath={docCollectionPath}
                 depth={depth + 1}
               />
             ))}
@@ -239,6 +253,8 @@ const TreeNodeRow: React.FC<TreeNodeRowProps> = ({
                     value={v}
                     path={`${path}.${k}`}
                     docId={docId}
+                    docData={docData}
+                    docCollectionPath={docCollectionPath}
                     depth={depth + 1}
                   />
                 ))}
